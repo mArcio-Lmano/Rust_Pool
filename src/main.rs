@@ -278,7 +278,7 @@ fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
     let velocity_x = -power * direc_x;
     let velocity_y = -power * direc_y;
 
-    (velocity_x*0.5, velocity_y*0.5)
+    (velocity_x *2.0, velocity_y*2.0)
 }
 
 fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
@@ -288,8 +288,9 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
     let mut balls_in_the_hole: Vec<usize> = Vec::new();
     let mut ball_in_detected: bool = false;
 
-    for j in 0..holes.len()-1{
+    for j in 0..holes.len(){
         let hole: &Hole = &holes[j];
+        println!("{j}");
         let dx: f32 = white_ball.position.x - hole.position.x;
         let dy: f32 = white_ball.position.y - hole.position.y;
         let distance_squared: f32 = dx * dx + dy * dy;
@@ -300,8 +301,8 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
         }
     }
 
-    for i in 0..red_balls.len() - 1 {
-        for j in 0..holes.len() - 1 {
+    for i in 0..red_balls.len() {
+        for j in 0..holes.len()  {
             let ball: &Ball = &red_balls[i];
             let hole: &Hole = &holes[j];
             let dx: f32 = ball.position.x - hole.position.x;
