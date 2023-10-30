@@ -4,17 +4,13 @@ use ggez;
 use ggez::event;
 use ggez::glam::vec2;
 use ggez::graphics;
-use ggez::input::mouse::{MouseButton};
+use ggez::input::mouse::MouseButton;
 use ggez::{conf, Context, GameResult};
-use nalgebra::ComplexField;
-// use nalgebra::Point;
-// use std::cmp::min;
 // use ggez::input::keyboard::{KeyCode, KeyMods, KeyInput};
 use std::f32::consts::PI;
 // use std::time::Duration;
 use mint::Point2;
 // use rand::Rng;
-use std::time::{Instant, Duration};
 
 const BORDER: f32 = 40.0;
 const WINDOW_WIDTH: f32 = 1920.0;
@@ -114,7 +110,6 @@ impl Balls {
     }
 }
 
-
 struct Hole{
     position: Point2<f32>,
     radius: f32,
@@ -126,14 +121,62 @@ impl Holes {
     fn new () -> Holes{
         let mut holes:Vec<Hole> = Vec::new();
         for i in 0..HOLES_POINTS.len(){
-            holes.push(Hole { position: HOLES_POINTS[i], radius: HOLES_RADIUS })
+            holes.push(Hole { 
+                position: HOLES_POINTS[i], 
+                radius: HOLES_RADIUS 
+            })
         }
         Holes{holes}
     }
 }
 
+struct Player{
+    points: i32,
+}
 
+struct MainState {
+    balls: Balls,
+    holes: Holes,
+    player_1: Player,
+    player_2: Player,
+    turn: usize,
+    player_scores: bool,
+}
 
+impl MainState {
+    pub fn new() -> Self {
+        // let (screen_w, screen_h) = (FIELD_WIDTH, FIELD_HEIGHT);
+  
+        let balls = Balls::new();
+        let holes = Holes::new();
+        let player1 = Player{
+            points: 0,
+        };
+        let player2 = Player { 
+            points: 0,
+        };
+
+        let state: MainState =  MainState { 
+            balls: balls,
+            holes: holes,
+            player_1: player1,
+            player_2: player2,
+            turn: 1,
+            player_scores: true,
+        };
+        state
+    }
+    fn score(&mut self) {
+        if self.turn == 1 {
+            self.player_1.points += 1; // Player 1 scores
+        } else {
+            self.player_2.points += 1; // Player 2 scores
+        }
+        self.player_scores = true; // Set the flag to indicate scoring
+    }
+}
+
+// Functions
 fn clamp(ball: &mut Ball) {
     let (min_x, min_y, max_x, max_y) = (
         ball.radius + BORDER,
@@ -158,7 +201,6 @@ fn clamp(ball: &mut Ball) {
         ball.velocity.y *= -1.0;
     }
 }
-
 
 fn collision(balls: &Balls) -> (bool, Vec<(usize, usize)>) {
     let mut collided_pairs: Vec<(usize, usize)> = Vec::new();
@@ -198,7 +240,6 @@ fn collision(balls: &Balls) -> (bool, Vec<(usize, usize)>) {
     }
     (collision_detected, collided_pairs)
 }
-
 
 fn momentum_conservation(collided_balls: &[(usize, usize)], balls: &mut Balls) {
     let red_balls = &mut balls.balls_red;
@@ -261,7 +302,6 @@ fn momentum_conservation(collided_balls: &[(usize, usize)], balls: &mut Balls) {
     }
 } 
 
-
 fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
     let max_distance: f32 = 40.0;
 
@@ -278,7 +318,7 @@ fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
     let velocity_x = -power * direc_x;
     let velocity_y = -power * direc_y;
 
-    (velocity_x *2.0, velocity_y*2.0)
+    (velocity_x * 1.1, velocity_y* 1.1)
 }
 
 fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
@@ -290,7 +330,6 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
 
     for j in 0..holes.len(){
         let hole: &Hole = &holes[j];
-        println!("{j}");
         let dx: f32 = white_ball.position.x - hole.position.x;
         let dy: f32 = white_ball.position.y - hole.position.y;
         let distance_squared: f32 = dx * dx + dy * dy;
@@ -318,39 +357,6 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
     (balls_in_the_hole, ball_in_detected)
 }
 
-struct MainState {
-    balls: Balls,
-    holes: Holes,
-}
-
-impl MainState {
-    pub fn new(number_balls: usize) -> Self {
-        let (screen_w, screen_h) = (FIELD_WIDTH, FIELD_HEIGHT);
-  
-        let mut balls = Balls::new();
-        let holes = Holes::new();
-        let state: MainState =  MainState { 
-            balls: balls,
-            holes: holes
-        };
-
-
-        // for i in 0..number_balls{
-        //     let color: graphics::Color = colors[i];
-        //     let radius = rng.gen_range(0.0..100.0);
-        //     let x: f32 = rng.gen_range(0.0 + radius..screen_w - radius);
-        //     let y: f32 = rng.gen_range(0.0 + radius..screen_h - radius);
-        //     let velocity: Point2<f32> = Point2 { x: 2.0, y: 5.5 };
-        //     state.add_ball(x, y, radius, color, velocity)
-        // }
-        state
-    }
-    
-    // pub fn add_ball(&mut self, x:f32, y:f32 ,radius: f32, color: graphics::Color, velocity: Point2<f32>){
-    //     let ball: Ball = Ball::new(x, y, radius, color, velocity);
-    //     self.balls.push(ball);
-    // }
-}
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> Result<(), ggez::GameError> {
@@ -359,19 +365,24 @@ impl event::EventHandler for MainState {
         // println!("{white_power}");
         let m_ctx: &ggez::input::mouse::MouseContext = &ctx.mouse;
         let mut ready_falg : bool = false;
+        
         if self.balls.ball_white.velocity.x.abs() < 0.05 
-            && self.balls.ball_white.velocity.y.abs() < 0.05{
-                ready_falg = true;
-                self.balls.ball_white.velocity.x = 0.0;
-                self.balls.ball_white.velocity.y = 0.0;
-                self.balls.ball_white.color = ggez::graphics::Color::WHITE;
-            }
-
+            && self.balls.ball_white.velocity.y.abs() < 0.05
+            && !ready_falg{
+            ready_falg = true;
+            self.balls.ball_white.velocity.x = 0.0;
+            self.balls.ball_white.velocity.y = 0.0;
+            self.balls.ball_white.color = ggez::graphics::Color::WHITE;
+        }
+        
         if m_ctx.button_just_pressed(MouseButton::Left) && ready_falg {
+            self.player_scores = false;
             self.balls.ball_white.color = ggez::graphics::Color::from_rgb(183, 183, 183);
             let (white_power_x, white_power_y) = pool_movement(ctx, &self.balls.ball_white);
             self.balls.ball_white.velocity.x = white_power_x;
             self.balls.ball_white.velocity.y = white_power_y;
+
+
         }
 
         clamp(&mut self.balls.ball_white);
@@ -400,7 +411,10 @@ impl event::EventHandler for MainState {
         let (balls_in_the_hole, ball_hole_flag) = in_hole(&mut self.holes, &mut self.balls);
         if ball_hole_flag{
             for index in balls_in_the_hole{
-                if index != 69{self.balls.balls_red.remove(index); 
+                if index != 69{
+                    self.balls.balls_red.remove(index);
+                    self.player_scores = true;
+                    self.score();
                 }else {
                     self.balls.ball_white.position = Point2{
                         x: 200.0, 
@@ -412,6 +426,14 @@ impl event::EventHandler for MainState {
                     };
                 }
             }
+        }
+
+        if self.balls.ball_white.color == ggez::graphics::Color::WHITE && !self.player_scores{
+            self.player_scores = true;
+            println!("Branco");
+            if self.turn == 1 {
+                self.turn = 2;
+            }else{self.turn = 1}
         }
         Ok(())
     }
@@ -496,6 +518,48 @@ impl event::EventHandler for MainState {
         )?;
         canvas.draw(&ball_mesh_white, graphics::DrawParam::default());
 
+        let mut player1_points_txt = graphics::Text::new(format!("Player 1 Points: {}", self.player_1.points));
+        let player1_points = graphics::DrawParam::new()
+        .dest(Point2{
+            x:270.0,
+            y:0.0,
+        })
+        .color(graphics::Color::WHITE);
+
+        canvas.draw(
+        player1_points_txt
+            .set_scale(40.),
+            player1_points,
+        );
+
+
+        let mut player2_points_txt = graphics::Text::new(format!("Player 2 Points: {}", self.player_2.points));
+        let player2_points = graphics::DrawParam::new()
+        .dest(Point2{
+            x:1270.0,
+            y:0.0,
+        })
+        .color(graphics::Color::WHITE);
+
+        canvas.draw(
+        player2_points_txt
+            .set_scale(40.),
+            player2_points,
+        );
+
+        let mut player_turn_txt = graphics::Text::new(format!("Player {} Turn", self.turn));
+        let player_turn = graphics::DrawParam::new()
+        .dest(Point2{
+            x:300.0,
+            y:1040.0,
+        })
+        .color(graphics::Color::WHITE);
+
+        canvas.draw(
+            player_turn_txt
+            .set_scale(40.),
+            player_turn,
+        );
         canvas.finish(ctx)?;
         Ok(())
     }
@@ -510,7 +574,7 @@ fn main() -> GameResult {
         .build()
         .unwrap();
 
-    let mut state = MainState::new(4);
+    let mut state = MainState::new();
     event::run(ctx, event_loop, state);
     Ok(())
 }
