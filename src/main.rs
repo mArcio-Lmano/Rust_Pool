@@ -394,8 +394,8 @@ impl event::EventHandler for MainState {
 
         for ball in &mut self.balls.balls_red{
             
-            ball.velocity.x *= DECELERATION_FACTOR;
-            ball.velocity.y *= DECELERATION_FACTOR;
+            // ball.velocity.x *= DECELERATION_FACTOR;
+            // ball.velocity.y *= DECELERATION_FACTOR;
             ball.position.x += ball.velocity.x;
             ball.position.y += ball.velocity.y;
             clamp(ball)
