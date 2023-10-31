@@ -221,7 +221,6 @@ fn collision(balls: &Balls) -> (bool, Vec<(usize, usize)>) {
         let min_distance = white_ball.radius + ball.radius;
         if distance_squared < min_distance * min_distance {
             // Add the white ball index and the red ball index to the list.
-            // Assuming that white ball has index -1 (you can choose a unique index)
             collided_pairs.push((69, i)); // Collision detected with white ball.
             collision_detected = true;
         }
