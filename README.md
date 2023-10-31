@@ -45,4 +45,11 @@ Rust Pool Game is a simple 2D pool (billiards) game implemented in the Rust prog
 
 ## Known Bugs
 
-* Occasionally, when a ball travels at high speed, it may pass through other balls due to collision handling limitations.
+* Occasionally, when a ball travels at high speed, it may pass through other balls due to collision handling limitations (Work in the Feature).
+
+## Future Work
+
+- **Implement an AI:** Enhance the game by adding an artificial intelligence (AI) opponent, allowing players to challenge computer-controlled opponents.
+
+- **Menu System:** Create a user-friendly menu system that provides options for playing against another player or challenging the AI. This menu can enhance the overall user experience and make the game more accessible.
+
