@@ -17,12 +17,11 @@ pub const WINDOW_HEIGHT: f32 = 1080.0;
 const BORDER: f32 = 40.0;
 const FIELD_WIDTH: f32 = WINDOW_WIDTH - BORDER;
 const FIELD_HEIGHT: f32 = WINDOW_HEIGHT - BORDER;
-// const CIRCLE_V: f32 = 4.5;
 const SIGMA: f32 = 1.0;
 const HOLES_RADIUS: f32 = 36.0;
 const HOLES_POINTS: [Point2<f32>; 6]  = [
     Point2{x: 0.0 + HOLES_RADIUS, y: 0.0 + HOLES_RADIUS},
-    Point2{x: WINDOW_WIDTH - HOLES_RADIUS, y: 0.0 + HOLES_RADIUS}, // DO not work
+    Point2{x: WINDOW_WIDTH - HOLES_RADIUS, y: 0.0 + HOLES_RADIUS},
     Point2{x: WINDOW_WIDTH  - HOLES_RADIUS, y: WINDOW_HEIGHT - HOLES_RADIUS},
     Point2{x: 0.0 + HOLES_RADIUS, y: WINDOW_HEIGHT - HOLES_RADIUS},
     Point2{x: WINDOW_WIDTH/2.0 , y: WINDOW_HEIGHT - HOLES_RADIUS},
@@ -30,6 +29,7 @@ const HOLES_POINTS: [Point2<f32>; 6]  = [
 ];
 const BALL_RADIUS: f32 = 18.0;
 const DECELERATION_FACTOR: f32 = 0.98;
+const LINE_LENGTH: f32 = 100.0; // Adjust the length of the line as needed
 
 struct Ball {
     position: Point2<f32>,
@@ -38,7 +38,6 @@ struct Ball {
     velocity: Point2<f32>,
     number: usize,
     mass: f32,
-    // momentum: f32,
 }
 impl Ball {
     fn new(x:f32, y:f32 ,radius: f32, color: graphics::Color, velocity: Point2<f32>, number: usize) -> Ball {
@@ -53,10 +52,8 @@ impl Ball {
             radius,
             color,
             velocity,
-            // direction,
             number,
             mass,
-            // momentum: mass*CIRCLE_V,
         }
     }
 }
@@ -71,7 +68,6 @@ impl Balls {
         let mut y: f32 = 540.0;
         let mut aux_index: usize = 0;
         let aux_array: [usize;5] = [1,3,6,10,15];
-        // let mut count: usize = 0;
 
         let mut balls_red = Vec::new();
         for i in 1..=15{
@@ -141,6 +137,7 @@ pub struct MainState {
     player_2: Player,
     turn: usize,
     player_scores: bool,
+    mouse_position: Point2<f32>,
 }
 
 impl MainState {
@@ -163,6 +160,10 @@ impl MainState {
             player_2: player2,
             turn: 1,
             player_scores: true,
+            mouse_position: Point2 { 
+                x: 0.0, 
+                y: 0.0 
+            }
         };
         state
     }
@@ -361,8 +362,6 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> Result<(), ggez::GameError> {
 
-        // let (white_power_x, white_power_y) = pool_movement(ctx, &self.balls.ball_white);
-        // println!("{white_power}");
         let m_ctx: &ggez::input::mouse::MouseContext = &ctx.mouse;
         let mut ready_falg : bool = false;
         
@@ -430,7 +429,6 @@ impl event::EventHandler for MainState {
 
         if self.balls.ball_white.color == ggez::graphics::Color::WHITE && !self.player_scores{
             self.player_scores = true;
-            println!("Branco");
             if self.turn == 1 {
                 self.turn = 2;
             }else{self.turn = 1}
@@ -465,7 +463,7 @@ impl event::EventHandler for MainState {
                 graphics::DrawMode::fill(),
                 HOLES_POINTS[i],
                 HOLES_RADIUS,
-                0.1,
+                0.01,
                 graphics::Color::BLACK,
             )?;
             canvas.draw(&ball_mesh, graphics::DrawParam::default());
@@ -478,7 +476,7 @@ impl event::EventHandler for MainState {
                 graphics::DrawMode::fill(),
                 ball.position,
                 ball.radius,
-                0.1,
+                0.01,
                 ball.color,
             )?;
             canvas.draw(&ball_mesh, graphics::DrawParam::default());
@@ -561,6 +559,32 @@ impl event::EventHandler for MainState {
             .set_scale(40.),
             player_turn,
         );
+
+
+        let white_ball_position = self.balls.ball_white.position;
+        self.mouse_position = ctx.mouse.position();
+
+        // Calculate the direction vector from the mouse to the white ball
+        let direction = mint::Point2 {
+            x: white_ball_position.x - self.mouse_position.x,
+            y: white_ball_position.y - self.mouse_position.y,
+        };
+    
+        // Calculate the line endpoint
+        let line_endpoint = mint::Point2 {
+            x: white_ball_position.x + direction.x*LINE_LENGTH,
+            y: white_ball_position.y + direction.y*LINE_LENGTH,
+        };
+    
+        // Draw a line from the mouse to the white ball
+        let line = graphics::Mesh::new_line(
+            ctx,
+            &[white_ball_position, line_endpoint],
+            2.0, // Line width
+            graphics::Color::WHITE,
+        )?;
+        canvas.draw(&line, graphics::DrawParam::default());
+
         canvas.finish(ctx)?;
         Ok(())
     }
