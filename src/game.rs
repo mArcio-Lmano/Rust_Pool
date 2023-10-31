@@ -138,6 +138,7 @@ pub struct MainState {
     turn: usize,
     player_scores: bool,
     mouse_position: Point2<f32>,
+    game_over: bool
 }
 
 impl MainState {
@@ -163,7 +164,8 @@ impl MainState {
             mouse_position: Point2 { 
                 x: 0.0, 
                 y: 0.0 
-            }
+            },
+            game_over: false,
         };
         state
     }
@@ -304,7 +306,7 @@ fn momentum_conservation(collided_balls: &[(usize, usize)], balls: &mut Balls) {
 } 
 
 fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
-    let max_distance: f32 = 40.0;
+    let max_distance: f32 = 80.0;
 
     let mouse_position = ctx.mouse.position();
     let dx: f32 = mouse_position.x - white_ball.position.x;
@@ -364,7 +366,7 @@ impl event::EventHandler for MainState {
 
         let m_ctx: &ggez::input::mouse::MouseContext = &ctx.mouse;
         let mut ready_falg : bool = false;
-        
+
         if self.balls.ball_white.velocity.x.abs() < 0.05 
             && self.balls.ball_white.velocity.y.abs() < 0.05
             && !ready_falg{
@@ -391,42 +393,47 @@ impl event::EventHandler for MainState {
         self.balls.ball_white.position.x += self.balls.ball_white.velocity.x;
         self.balls.ball_white.position.y += self.balls.ball_white.velocity.y;
 
-        for ball in &mut self.balls.balls_red{
-            
-            ball.velocity.x *= DECELERATION_FACTOR;
-            ball.velocity.y *= DECELERATION_FACTOR;
-            ball.position.x += ball.velocity.x;
-            ball.position.y += ball.velocity.y;
-            clamp(ball)
-        }
+        if !self.game_over{
+            for ball in &mut self.balls.balls_red{
+                
+                ball.velocity.x *= DECELERATION_FACTOR;
+                ball.velocity.y *= DECELERATION_FACTOR;
+                ball.position.x += ball.velocity.x;
+                ball.position.y += ball.velocity.y;
+                clamp(ball)
+            }
 
-        // Check for colisions
-        let (collision_bool, collided_balls) = collision(&mut self.balls);
-        if collision_bool{
-            momentum_conservation(&collided_balls, &mut self.balls);
-        }
-        
-        // Check to see if the ball its the hole
-        let (balls_in_the_hole, ball_hole_flag) = in_hole(&mut self.holes, &mut self.balls);
-        if ball_hole_flag{
-            for index in balls_in_the_hole{
-                if index != 69{
-                    self.balls.balls_red.remove(index);
-                    self.player_scores = true;
-                    self.score();
-                }else {
-                    self.balls.ball_white.position = Point2{
-                        x: 200.0, 
-                        y: 540.0
-                    };
-                    self.balls.ball_white.velocity = Point2{
-                        x:0.0,
-                        y:0.0
-                    };
+            // Check for colisions
+            let (collision_bool, collided_balls) = collision(&mut self.balls);
+            if collision_bool{
+                momentum_conservation(&collided_balls, &mut self.balls);
+            }
+
+            // Check to see if the ball its the hole
+            let (balls_in_the_hole, ball_hole_flag) = in_hole(&mut self.holes, &mut self.balls);
+            if ball_hole_flag{
+                for index in balls_in_the_hole{
+                    if index != 69{
+                        self.balls.balls_red.remove(index);
+                        self.player_scores = true;
+                        self.score();
+                    }else {
+                        self.balls.ball_white.position = Point2{
+                            x: 200.0, 
+                            y: 540.0
+                        };
+                        self.balls.ball_white.velocity = Point2{
+                            x:0.0,
+                            y:0.0
+                        };
+                    }
                 }
             }
+            if self.balls.balls_red.is_empty(){
+                self.game_over = true
+            }
+        
         }
-
         if self.balls.ball_white.color == ggez::graphics::Color::WHITE && !self.player_scores{
             self.player_scores = true;
             if self.turn == 1 {
@@ -455,7 +462,18 @@ impl event::EventHandler for MainState {
             graphics::Color::from_rgb(165, 42, 42),
         )?;
         canvas.draw(&rect, graphics::DrawParam::default());
+        if self.game_over {
+            let mut game_over_text = graphics::Text::new("Game Over!");
+            let game_over_dest = graphics::DrawParam::new()
+                .dest(Point2 { x: 800.0, y: 500.0 })
+                .color(graphics::Color::WHITE);
 
+            canvas.draw(
+                game_over_text
+                    .set_scale(60.0),
+                game_over_dest,
+            );
+        }
         // DRAW HOLES
         for i in 0..HOLES_POINTS.len(){
             let ball_mesh: graphics::Mesh = graphics::Mesh::new_circle(
@@ -463,7 +481,7 @@ impl event::EventHandler for MainState {
                 graphics::DrawMode::fill(),
                 HOLES_POINTS[i],
                 HOLES_RADIUS,
-                0.01,
+                0.001,
                 graphics::Color::BLACK,
             )?;
             canvas.draw(&ball_mesh, graphics::DrawParam::default());
@@ -476,7 +494,7 @@ impl event::EventHandler for MainState {
                 graphics::DrawMode::fill(),
                 ball.position,
                 ball.radius,
-                0.01,
+                0.001,
                 ball.color,
             )?;
             canvas.draw(&ball_mesh, graphics::DrawParam::default());
