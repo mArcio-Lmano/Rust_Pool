@@ -1,12 +1,12 @@
-extern crate rand;
 use rand::Rng;
+use mint::Point2;
 
 // Define the game environment
 struct PoolGame {
     // State space
-    white_ball_position: (f32, f32),
-    red_balls_positions: Vec<(f32, f32)>,
-    player_turn: u8, // 1 or 2 for player 1 and player 2
+    white_ball_position: Point2,
+    red_balls_positions: Vec<Point2>,
+    player_turn: usize, // 1 or 2 for player 1 and player 2
 
     // Action space
     available_actions: Vec<PoolAction>, // Custom struct for actions
@@ -23,8 +23,7 @@ struct PoolGame {
 
 // Define custom actions the RL agent can take
 struct PoolAction {
-    angle: f32, // Angle of the shot
-    power: f32, // Strength of the shot
+    mouse_position: Point2,
 }
 
 impl PoolGame {

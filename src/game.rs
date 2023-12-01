@@ -14,6 +14,11 @@ use mint::Point2;
 
 pub const WINDOW_WIDTH: f32 = 1920.0;
 pub const WINDOW_HEIGHT: f32 = 1080.0;
+
+const CELL_SIZE: f32 = 40.0; // Adjust
+const GRID_WIDTH: usize = ((WINDOW_WIDTH - 2.0* BORDER) / CELL_SIZE + 1.0) as usize; // 1920 - 80 = 1840 / 20
+const GRID_HEIGHT: usize = ((WINDOW_HEIGHT - 2.0*BORDER) / CELL_SIZE + 1.0) as usize; // 1080 - 90 = 1000 / 20
+
 const BORDER: f32 = 40.0;
 const FIELD_WIDTH: f32 = WINDOW_WIDTH - BORDER;
 const FIELD_HEIGHT: f32 = WINDOW_HEIGHT - BORDER;
@@ -31,6 +36,7 @@ const BALL_RADIUS: f32 = 18.0;
 const DECELERATION_FACTOR: f32 = 0.98;
 const LINE_LENGTH: f32 = 100.0; // Adjust the length of the line as needed
 
+#[derive(Debug)]
 struct Ball {
     position: Point2<f32>,
     radius: f32,
@@ -57,6 +63,20 @@ impl Ball {
         }
     }
 }
+impl Clone for Ball {
+    fn clone(&self) -> Self {
+        // Implement the cloning logic for each field
+        Ball {
+            position: self.position.clone(),
+            radius: self.radius,
+            color: self.color,
+            velocity: self.velocity.clone(),
+            number: self.number,
+            mass: self.mass,
+        }
+    }
+}
+
 
 struct Balls{
     balls_red: Vec<Ball>,
@@ -110,6 +130,7 @@ struct Hole{
     position: Point2<f32>,
     radius: f32,
 }
+
 struct Holes{
     holes: Vec<Hole>,
 }
@@ -127,7 +148,7 @@ impl Holes {
 }
 
 struct Player{
-    points: i32,
+    points: u32,
 }
 
 pub struct MainState {
@@ -138,7 +159,8 @@ pub struct MainState {
     turn: usize,
     player_scores: bool,
     mouse_position: Point2<f32>,
-    game_over: bool
+    game_over: bool,
+    grid: Vec<Vec<Vec<Ball>>> , 
 }
 
 impl MainState {
@@ -166,6 +188,7 @@ impl MainState {
                 y: 0.0 
             },
             game_over: false,
+            grid: vec![vec![vec![]; GRID_HEIGHT]; GRID_WIDTH],
         };
         state
     }
@@ -205,37 +228,118 @@ fn clamp(ball: &mut Ball) {
     }
 }
 
-fn collision(balls: &Balls) -> (bool, Vec<(usize, usize)>) {
+// fn collision(balls: &Balls, grid: &Vec<Vec<Vec<usize>>>) -> (bool, Vec<(usize, usize)>) {
+//     let mut collided_pairs: Vec<(usize, usize)> = Vec::new();
+//     let mut collision_detected = false;
+
+//     let white_ball = &balls.ball_white;
+//     let red_balls = &balls.balls_red;
+
+//     // Iterate through all red balls
+//     for i in 0..red_balls.len() {
+//         let ball = &red_balls[i];
+//         let cell_x = (ball.position.x / CELL_SIZE) as usize;
+//         let cell_y = (ball.position.y / CELL_SIZE) as usize;
+        
+//         // Iterate through nearby cells and compare with balls in those cells
+//         for j in (cell_x.saturating_sub(1)..=cell_x + 1).filter(|&x| x < GRID_WIDTH) {
+//             for k in (cell_y.saturating_sub(1)..=cell_y + 1).filter(|&y| y < GRID_HEIGHT) {
+//                 for &other_ball_index in &grid[j][k] {
+//                     let other_ball = &red_balls[other_ball_index];
+
+//                     // Skip comparing the same ball and balls that have already been checked
+//                     if i >= other_ball_index {
+//                         continue;
+//                     }
+
+//                     let dx = ball.position.x - other_ball.position.x;
+//                     let dy = ball.position.y - other_ball.position.y;
+//                     let distance_squared = dx * dx + dy * dy;
+//                     let min_distance = ball.radius + other_ball.radius;
+
+//                     if distance_squared < min_distance * min_distance {
+//                         collided_pairs.push((i, other_ball_index));
+//                         collision_detected = true;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     // Check for collision between white ball and red balls
+//     for i in 0..red_balls.len() {
+//         let ball = &red_balls[i];
+//         let dx = white_ball.position.x - ball.position.x;
+//         let dy = white_ball.position.y - ball.position.y;
+//         let distance_squared = dx * dx + dy * dy;
+//         let min_distance = white_ball.radius + ball.radius;
+
+//         if distance_squared < min_distance * min_distance {
+//             // Add the white ball index and the red ball index to the list.
+//             collided_pairs.push((white_ball.number, i)); // Collision detected with white ball.
+//             collision_detected = true;
+//         }
+//     }
+
+//     (collision_detected, collided_pairs)
+// }
+
+
+// fn collision(balls: &Balls) -> (bool, Vec<(usize, usize)>) {
+//     let mut collided_pairs: Vec<(usize, usize)> = Vec::new();
+//     let mut collision_detected = false;
+
+//     let white_ball = &balls.ball_white;
+//     let red_balls = &balls.balls_red;
+
+
+//     for i in 0..red_balls.len() {
+//         let ball = &red_balls[i];
+//         let dx = white_ball.position.x - ball.position.x;
+//         let dy = white_ball.position.y - ball.position.y;
+//         let distance_squared = dx * dx + dy * dy;
+//         let min_distance = white_ball.radius + ball.radius;
+//         if distance_squared < min_distance * min_distance {
+//             // Add the white ball index and the red ball index to the list.
+//             collided_pairs.push((69, i)); // Collision detected with white ball.
+//             collision_detected = true;
+//         }
+//     }
+
+//     for i in 0..red_balls.len() - 1 {
+//         for j in i + 1..red_balls.len() {
+//             let ball1 = &red_balls[i];
+//             let ball2 = &red_balls[j];
+//             let dx = ball1.position.x - ball2.position.x;
+//             let dy = ball1.position.y - ball2.position.y;
+//             let distance_squared = dx * dx + dy * dy;
+//             let min_distance = ball1.radius + ball2.radius;
+//             if distance_squared < min_distance * min_distance {
+//                 collided_pairs.push((i, j)); // Collision detected, add the pair to the list.
+//                 collision_detected = true;
+//             }
+//         }
+//     }
+//     (collision_detected, collided_pairs)
+// }
+
+fn collision(balls: Vec<&Ball>) -> (bool, Vec<(usize, usize)>) {
     let mut collided_pairs: Vec<(usize, usize)> = Vec::new();
     let mut collision_detected = false;
 
-    let white_ball = &balls.ball_white;
-    let red_balls = &balls.balls_red;
+    // let white_ball = &balls.ball_white;
+    // let red_balls = &balls.balls_red;
 
-
-    for i in 0..red_balls.len() {
-        let ball = &red_balls[i];
-        let dx = white_ball.position.x - ball.position.x;
-        let dy = white_ball.position.y - ball.position.y;
-        let distance_squared = dx * dx + dy * dy;
-        let min_distance = white_ball.radius + ball.radius;
-        if distance_squared < min_distance * min_distance {
-            // Add the white ball index and the red ball index to the list.
-            collided_pairs.push((69, i)); // Collision detected with white ball.
-            collision_detected = true;
-        }
-    }
-
-    for i in 0..red_balls.len() - 1 {
-        for j in i + 1..red_balls.len() {
-            let ball1 = &red_balls[i];
-            let ball2 = &red_balls[j];
+    for i in 0..balls.len() - 1 {
+        for j in i + 1..balls.len() {
+            let ball1 = &balls[i];
+            let ball2 = &balls[j];
             let dx = ball1.position.x - ball2.position.x;
             let dy = ball1.position.y - ball2.position.y;
             let distance_squared = dx * dx + dy * dy;
             let min_distance = ball1.radius + ball2.radius;
             if distance_squared < min_distance * min_distance {
-                collided_pairs.push((i, j)); // Collision detected, add the pair to the list.
+                collided_pairs.push((ball1.number, ball2.number)); // Collision detected, add the pair to the list.
                 collision_detected = true;
             }
         }
@@ -305,7 +409,7 @@ fn momentum_conservation(collided_balls: &[(usize, usize)], balls: &mut Balls) {
 } 
 
 fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
-    let max_distance: f32 = 80.0;
+    let max_distance: f32 = 40.0 + white_ball.radius;
 
     let mouse_position = ctx.mouse.position();
     let dx: f32 = mouse_position.x - white_ball.position.x;
@@ -359,11 +463,26 @@ fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
     (balls_in_the_hole, ball_in_detected)
 }
 
+fn calculate_grid_cell(ball: Ball) -> (usize, usize, &Ball) {
+    // Calculate the grid cell coordinates based on the position (x, y)
+    // You can adjust the grid cell size to match your game's requirements.
+    // For simplicity, let's assume a grid cell size of 100 units.
+    // let cell_size = 100.0;
+    let cell_x = (ball.position.x / CELL_SIZE).floor() as usize;
+    let cell_y = (ball.position.y / CELL_SIZE).floor() as usize;
+    (cell_x, cell_y, &ball)
+}
+
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> Result<(), ggez::GameError> {
+        let mut red_balls_cells: Vec<(usize, usize, &Ball)> = Vec::new();
+        // println!("Grid Width {} and Grid Height {}", GRID_WIDTH, GRID_HEIGHT);
 
+        // Mouse press
         let m_ctx: &ggez::input::mouse::MouseContext = &ctx.mouse;
+
+        // Ready to play flag, ball turns white once ready
         let mut ready_falg : bool = false;
 
         if self.balls.ball_white.velocity.x.abs() < 0.05 
@@ -386,27 +505,56 @@ impl event::EventHandler for MainState {
         }
 
         clamp(&mut self.balls.ball_white);
-        // Apply deceleration to the white ball
+ 
+        // Update the position of the white ball based on its velocity
         self.balls.ball_white.velocity.x *= DECELERATION_FACTOR;
         self.balls.ball_white.velocity.y *= DECELERATION_FACTOR;
         self.balls.ball_white.position.x += self.balls.ball_white.velocity.x;
         self.balls.ball_white.position.y += self.balls.ball_white.velocity.y;
 
+        clamp(&mut self.balls.ball_white);
+
+        // White ball cell
+        let (white_cell_x, white_cell_y, _) = calculate_grid_cell(&mut self.balls.ball_white);
+        println!("Cell_x {} Cell_y {}", white_cell_x, white_cell_y);
+
+        self.grid[white_cell_x][white_cell_y].push(self.balls.ball_white.clone());
+
+        // Calculate the new grid cell coordinates for the white ball
+        // Add the white ball's index to its new grid cell
+        // let new_grid_cell = &mut self.grid[new_cell_x][new_cell_y];
+        // new_grid_cell.push(self.balls.ball_white.number); // Assuming the white ball's index is 0
+   
         if !self.game_over{
-            for ball in &mut self.balls.balls_red{
+
+            for ball in &mut self.balls.balls_red {
+
                 
+                // Update the position of the ball based on its velocity
                 ball.velocity.x *= DECELERATION_FACTOR;
                 ball.velocity.y *= DECELERATION_FACTOR;
                 ball.position.x += ball.velocity.x;
                 ball.position.y += ball.velocity.y;
-                clamp(ball)
+                let (red_ball_cell_x, red_ball_cell_y , _) = calculate_grid_cell(ball);
+                red_balls_cells.push((red_ball_cell_x, red_ball_cell_y, ball));
+                clamp(ball);
+            }
+
+            for (red_ball_cell_x, red_ball_cell_y, ball) in red_balls_cells{
+                if red_ball_cell_x == white_cell_x 
+                && red_ball_cell_y == white_cell_y{
+                    let (collision_bool, collided_balls) = collision(vec![&self.balls.ball_white, ball]);
+                    if collision_bool{
+                        momentum_conservation(&collided_balls, &mut self.balls);
+                    }
+                }
             }
 
             // Check for colisions
-            let (collision_bool, collided_balls) = collision(&mut self.balls);
-            if collision_bool{
-                momentum_conservation(&collided_balls, &mut self.balls);
-            }
+            // let (collision_bool, collided_balls) = collision(&mut self.balls, &mut self.grid);
+            // if collision_bool{
+            //     momentum_conservation(&collided_balls, &mut self.balls);
+            // }
 
             // Check to see if the ball its the hole
             let (balls_in_the_hole, ball_hole_flag) = in_hole(&mut self.holes, &mut self.balls);
