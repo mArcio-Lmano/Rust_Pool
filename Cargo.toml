@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 ggez = "0.9.3"
 rand = "0.8.5"
+nalgebra = "0.32.0"
 mint = "0.5.9"
