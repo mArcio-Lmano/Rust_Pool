@@ -177,7 +177,7 @@ impl MainState {
     pub fn new() -> Self {
         // let (screen_w, screen_h) = (FIELD_WIDTH, FIELD_HEIGHT);
   
-        let mut balls: Balls = Balls::new();
+        let balls: Balls = Balls::new();
         let holes = Holes::new();
         let player1 = Player{
             points: 0,
