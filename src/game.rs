@@ -459,7 +459,7 @@ fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
     let velocity_x = -power * direc_x;
     let velocity_y = -power * direc_y;
 
-    (velocity_x * 0.9, velocity_y* 0.9)
+    (velocity_x * 0.9, velocity_y * 0.9)
 }
 
 fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
@@ -589,7 +589,6 @@ impl event::EventHandler for MainState {
                 self.turn = 2;
             }else{self.turn = 1}
         }
-        grid.check_collisions(&mut self.balls);
 
         Ok(())
     }
