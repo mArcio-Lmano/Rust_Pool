@@ -34,7 +34,7 @@ const HOLES_POINTS: [Point2<f32>; 6]  = [
     Point2{x: WINDOW_WIDTH/2.0 , y: 0.0 + HOLES_RADIUS},
 ];
 const BALL_RADIUS: f32 = 18.0;
-const DECELERATION_FACTOR: f32 = 0.98;
+const DECELERATION_FACTOR: f32 = 0.985;
 const LINE_LENGTH: f32 = 100.0; // Adjust the length of the line as needed
 
 #[derive(Debug)]
@@ -459,7 +459,7 @@ fn pool_movement(ctx: &Context, white_ball: &Ball) -> (f32, f32) {
     let velocity_x = -power * direc_x;
     let velocity_y = -power * direc_y;
 
-    (velocity_x * 0.9, velocity_y * 0.9)
+    (velocity_x * 0.6, velocity_y * 0.6)
 }
 
 fn in_hole(holes: &Holes, balls: &mut Balls) -> (Vec<usize>, bool){
