@@ -1,6 +1,3 @@
-// mod ai;
-
-// use ai;
 use ggez;
 use ggez::glam::vec2;
 use ggez::graphics;
@@ -12,6 +9,7 @@ use std::fmt;
 // use std::time::Duration;
 use mint::Point2;
 // use rand::Rng;
+
 
 pub const WINDOW_WIDTH: f32 = 1920.0;
 pub const WINDOW_HEIGHT: f32 = 1080.0;
