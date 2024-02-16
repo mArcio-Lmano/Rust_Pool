@@ -4,6 +4,7 @@
 
 Rust Pool Game is a simple 2D pool (billiards) game implemented in the Rust programming language using the ggez game framework. The game features a white cue ball and a set of numbered red balls. The objective of the game is to pot the red balls into the pockets while following the rules of pool.
 
+![Rust Pool Game  Example](https://github.com/mArcio-Lmano/Rust_Pool/blob/master/example.gif)
 ## Features
 
 - Realistic ball physics and collision handling.
